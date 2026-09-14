@@ -1,0 +1,40 @@
+:root {
+  --bg-color: #0f172a;
+  --text-color: #f8fafc;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.navbar {
+  display: flex; gap: 1.5rem; padding: 1rem 2rem;
+  background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--card-border);
+  position: sticky; top: 0; z-index: 100;
+  align-items: center;
+}
+.navbar .brand { font-size: 1.25rem; font-weight: 700; color: white; margin-right: auto; }
+.navbar a { color: #cbd5e1; text-decoration: none; font-weight: 500; transition: color 0.2s; cursor: pointer; }
+.navbar a:hover, .navbar a.active { color: var(--primary); }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 12px; padding: 1.5rem; transition: transform 0.2s, box-shadow 0.2s;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+.card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2); }
+.btn {
+  background: var(--primary); color: white; border: none;
