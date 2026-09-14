@@ -1,7 +1,25 @@
 const { useState, useEffect } = React;
-const API_KEY = "IVY26-951527CC9D1C";
-const BASE_URL = "https://solve.ivy.homes";
+let API_KEY = "";
+let BASE_URL = "";
 const ToastContext = React.createContext();
+
+async function loadEnv() {
+  try {
+    const res = await fetch('.env');
+    const text = await res.text();
+    text.split('\n').forEach(line => {
+      const match = line.match(/^([^=]+)=(.*)$/);
+      if (match) {
+        const key = match[1].trim();
+        const val = match[2].trim();
+        if (key === 'API_KEY') API_KEY = val;
+        if (key === 'BASE_URL') BASE_URL = val;
+      }
+    });
+  } catch (e) {
+    console.warn("Could not load .env file", e);
+  }
+}
 
 const cleanDescription = (desc) => {
   if (!desc) return '';
@@ -451,5 +469,7 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+loadEnv().then(() => {
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+});
