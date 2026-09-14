@@ -323,5 +323,50 @@ function Favourites({ token }) {
     </div>
   );
 }
+function Insights() {
+  const anomalies = [
+    { title: "Fake Listings", value: 11, desc: "Listings with impossible < 1L prices acting as lead gen." },
+    { title: "Corrupt Records", value: 31, desc: "Listings with absurd data (e.g., negative price, area mismatches)." },
+    { title: "API Discrepancies", value: 10, desc: "Critical discrepancies found against API Reference." },
+    { title: "Projects out of sync", value: 419, desc: "Projects where total_listings differs from actual count." }
+  ];
+
+  const aggregates = {
+    total_listings: 4750,
+    active_listings: 3731,
+    unique_properties: 4742,
+    powai_rent_sum: "₹7,226,300",
+    avg_price_sqft_2bhk: "₹62,985",
+    costliest_project: "P50016 (₹124,400,000)",
+    listings_last_7_days: 154
+  };
+
+  return (
+    <div className="flex-col">
+      <h2>Insights Dashboard</h2>
+      
+      <h3 style={{marginTop:'1.5rem', marginBottom:'0.5rem', color:'var(--primary)'}}>Data Anomalies Discovered</h3>
+      <div className="grid">
+        {anomalies.map((a, i) => (
+          <div className="card" key={i} style={{borderColor: 'var(--danger)'}}>
+            <h3 style={{margin:0, color:'var(--danger)'}}>{a.title}</h3>
+            <div style={{fontSize:'2rem', fontWeight:'bold', margin:'1rem 0'}}>{a.value}</div>
+            <p style={{fontSize:'0.9rem', color:'#cbd5e1', margin:0}}>{a.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={{marginTop:'2rem', marginBottom:'0.5rem', color:'var(--primary)'}}>Pre-computed Aggregates</h3>
+      <div className="grid">
+        {Object.entries(aggregates).map(([k, v], i) => (
+          <div className="card" key={i}>
+            <div style={{fontSize:'0.9rem', color:'#94a3b8', textTransform:'capitalize'}}>{k.replace(/_/g, ' ')}</div>
+            <div style={{fontSize:'1.25rem', fontWeight:'600', marginTop:'0.5rem'}}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<MainApp />);
