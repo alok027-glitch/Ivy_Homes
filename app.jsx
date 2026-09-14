@@ -113,5 +113,106 @@ function Login({ setToken }) {
 }
 
 // Placeholders for now, will implement in next commits
+function Listings({ token }) {
+  const [items, setItems] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  const [locality, setLocality] = useState('');
+  const [bhk, setBhk] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [furnishing, setFurnishing] = useState('');
+
+  const fetchPage = async () => {
+    setLoading(true);
+    try {
+      let query = `?offset=${offset}&limit=50`;
+      if (locality) query += `&locality=${encodeURIComponent(locality)}`;
+      if (bhk) query += `&bedroom=${bhk}`;
+      if (minPrice) query += `&price_min=${minPrice}`;
+      if (maxPrice) query += `&price_max=${maxPrice}`;
+      if (furnishing) query += `&furnishing=${encodeURIComponent(furnishing)}`;
+
+      const res = await fetch(`${BASE_URL}/v1/listings${query}`, {
+        headers: { 'X-API-Key': API_KEY, 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setItems(data.results || []);
+      setTotal(data.total || 0);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    setOffset(0);
+  }, [locality, bhk, minPrice, maxPrice, furnishing]);
+
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchPage();
+    }, 300);
+    return () => clearTimeout(delay);
+  }, [offset, locality, bhk, minPrice, maxPrice, furnishing]);
+
+  useEffect(() => {
+    let res = items;
+    if (locality) res = res.filter(i => i.locality && i.locality.toLowerCase().includes(locality.toLowerCase()));
+    if (bhk) res = res.filter(i => String(i.bedroom) === String(bhk));
+    
+    const minVal = parseFloat(minPrice);
+    const maxVal = parseFloat(maxPrice);
+    
+    if (!isNaN(minVal)) {
+      res = res.filter(i => typeof i.price === 'number' && i.price >= minVal);
+    }
+    if (!isNaN(maxVal)) {
+      res = res.filter(i => typeof i.price === 'number' && i.price <= maxVal);
+    }
+    
+    if (furnishing) res = res.filter(i => i.furnishing === furnishing);
+    setFiltered(res);
+  }, [locality, bhk, minPrice, maxPrice, furnishing, items]);
+
+  return (
+    <div className="flex-col">
+      <div className="card flex-row">
+        <input className="input" placeholder="Locality" value={locality} onChange={e => setLocality(e.target.value)} />
+        <input className="input" type="number" placeholder="BHK" value={bhk} onChange={e => setBhk(e.target.value)} />
+        <input className="input" type="number" placeholder="Min Price (₹)" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
+        <input className="input" type="number" placeholder="Max Price (₹)" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
+        <select className="input" value={furnishing} onChange={e => setFurnishing(e.target.value)}>
+          <option value="">Any Furnishing</option>
+          <option value="unfurnished">Unfurnished</option>
+          <option value="semi-furnished">Semi-furnished</option>
+          <option value="fully-furnished">Fully-furnished</option>
+        </select>
+      </div>
+      {loading ? <div>Loading...</div> : (
+        <>
+          <div className="grid">
+            {filtered.map(i => (
+              <div className="card flex-col" key={i.listing_id}>
+                <h3 style={{margin:0}}>{i.apartment_name}</h3>
+                <div className="badge" style={{width: 'fit-content'}}>₹{i.price.toLocaleString()}</div>
+                <div>{i.bedroom} BHK • {i.locality}</div>
+                <a className="btn" href={`#/listings/${i.listing_id}`} style={{textAlign:'center', marginTop:'auto'}}>View Details</a>
+              </div>
+            ))}
+          </div>
+          <div className="flex-row" style={{justifyContent: 'center', marginTop: '2rem'}}>
+            <button className="btn" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous</button>
+            <span>Showing {offset + 1} - {offset + items.length} of {total}</span>
+            <button className="btn" disabled={offset + 50 >= total} onClick={() => setOffset(offset + 50)}>Next</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<MainApp />);
