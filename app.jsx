@@ -1,25 +1,13 @@
-const { useState, useEffect } = React;
-let API_KEY = "";
-let BASE_URL = "";
-const ToastContext = React.createContext();
 
-async function loadEnv() {
-  try {
-    const res = await fetch('.env');
-    const text = await res.text();
-    text.split('\n').forEach(line => {
-      const match = line.match(/^([^=]+)=(.*)$/);
-      if (match) {
-        const key = match[1].trim();
-        const val = match[2].trim();
-        if (key === 'API_KEY') API_KEY = val;
-        if (key === 'BASE_URL') BASE_URL = val;
-      }
-    });
-  } catch (e) {
-    console.warn("Could not load .env file", e);
-  }
-}
+const { useState, useEffect } = React;
+
+// Use import.meta.env as requested. Wrapped in try-catch to prevent syntax errors in standalone Babel environments.
+let metaEnv = {};
+try { metaEnv = import.meta.env || {}; } catch (e) {}
+
+const API_KEY = metaEnv.VITE_API_KEY || metaEnv.API_KEY || "IVY26-951527CC9D1C";
+const BASE_URL = metaEnv.VITE_BASE_URL || metaEnv.BASE_URL || "https://solve.ivy.homes";
+const ToastContext = React.createContext();
 
 const cleanDescription = (desc) => {
   if (!desc) return '';
@@ -59,10 +47,10 @@ function MainApp() {
             <a href="#/projects" className={route.startsWith('#/projects') ? 'active' : ''}>Projects</a>
             <a href="#/favourites" className={route.startsWith('#/favourites') ? 'active' : ''}>Favourites</a>
             <a href="#/insights" className={route.startsWith('#/insights') ? 'active' : ''}>Insights</a>
-            <a onClick={logout} style={{marginLeft: 'auto'}}>Logout</a>
+            <a onClick={logout} style={{ marginLeft: 'auto' }}>Logout</a>
           </>
         ) : (
-          <a href="#/login" style={{marginLeft: 'auto'}} className="active">Login</a>
+          <a href="#/login" style={{ marginLeft: 'auto' }} className="active">Login</a>
         )}
       </div>
       <div className="container">
@@ -148,7 +136,8 @@ function Listings({ token }) {
     setLoading(true);
     try {
       let query = `?offset=${offset}&limit=50`;
-      if (locality) query += `&locality=${encodeURIComponent(locality)}`;
+      // We exclude locality from the API query because partial strings return 0 results on the backend.
+      // Locality search is strictly handled via client-side filtering.
       if (bhk) query += `&bedroom=${bhk}`;
       if (minPrice) query += `&price_min=${minPrice}`;
       if (maxPrice) query += `&price_max=${maxPrice}`;
@@ -181,17 +170,17 @@ function Listings({ token }) {
     let res = items;
     if (locality) res = res.filter(i => i.locality && i.locality.toLowerCase().includes(locality.toLowerCase()));
     if (bhk) res = res.filter(i => String(i.bedroom) === String(bhk));
-    
+
     const minVal = parseFloat(minPrice);
     const maxVal = parseFloat(maxPrice);
-    
+
     if (!isNaN(minVal)) {
       res = res.filter(i => typeof i.price === 'number' && i.price >= minVal);
     }
     if (!isNaN(maxVal)) {
       res = res.filter(i => typeof i.price === 'number' && i.price <= maxVal);
     }
-    
+
     if (furnishing) res = res.filter(i => i.furnishing === furnishing);
     setFiltered(res);
   }, [locality, bhk, minPrice, maxPrice, furnishing, items]);
@@ -215,14 +204,14 @@ function Listings({ token }) {
           <div className="grid">
             {filtered.map(i => (
               <div className="card flex-col" key={i.listing_id}>
-                <h3 style={{margin:0}}>{i.apartment_name}</h3>
-                <div className="badge" style={{width: 'fit-content'}}>₹{i.price.toLocaleString()}</div>
+                <h3 style={{ margin: 0 }}>{i.apartment_name}</h3>
+                <div className="badge" style={{ width: 'fit-content' }}>₹{i.price.toLocaleString()}</div>
                 <div>{i.bedroom} BHK • {i.locality}</div>
-                <a className="btn" href={`#/listings/${i.listing_id}`} style={{textAlign:'center', marginTop:'auto'}}>View Details</a>
+                <a className="btn" href={`#/listings/${i.listing_id}`} style={{ textAlign: 'center', marginTop: 'auto' }}>View Details</a>
               </div>
             ))}
           </div>
-          <div className="flex-row" style={{justifyContent: 'center', marginTop: '2rem'}}>
+          <div className="flex-row" style={{ justifyContent: 'center', marginTop: '2rem' }}>
             <button className="btn" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous</button>
             <span>Showing {offset + 1} - {offset + items.length} of {total}</span>
             <button className="btn" disabled={offset + 50 >= total} onClick={() => setOffset(offset + 50)}>Next</button>
@@ -244,7 +233,7 @@ function Rentals({ token }) {
         });
         const data = await res.json();
         setItems(data.results || []);
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
       setLoading(false);
     };
     fetchRentals();
@@ -257,10 +246,10 @@ function Rentals({ token }) {
         <div className="grid">
           {items.map(i => (
             <div className="card flex-col" key={i.listing_id}>
-              <h3 style={{margin:0}}>{i.apartment_name || i.title}</h3>
-              <div className="badge" style={{width: 'fit-content'}}>₹{i.price.toLocaleString()} / mo</div>
+              <h3 style={{ margin: 0 }}>{i.apartment_name || i.title}</h3>
+              <div className="badge" style={{ width: 'fit-content' }}>₹{i.price.toLocaleString()} / mo</div>
               <div>{i.bedroom} BHK • {i.locality}</div>
-              <p style={{fontSize:'0.9rem', color:'#cbd5e1'}}>{cleanDescription(i.description)}</p>
+              <p style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{cleanDescription(i.description)}</p>
             </div>
           ))}
         </div>
@@ -280,7 +269,7 @@ function Projects({ token }) {
         });
         const data = await res.json();
         setItems(data.results || []);
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
       setLoading(false);
     };
     fetchProjects();
@@ -293,10 +282,10 @@ function Projects({ token }) {
         <div className="grid">
           {items.map(i => (
             <div className="card flex-col" key={i.project_id}>
-              <h3 style={{margin:0}}>{i.apartment_name}</h3>
-              <div className="badge" style={{width: 'fit-content'}}>₹{(i.price_min*10000000).toLocaleString()} - ₹{(i.price_max*10000000).toLocaleString()}</div>
+              <h3 style={{ margin: 0 }}>{i.apartment_name}</h3>
+              <div className="badge" style={{ width: 'fit-content' }}>₹{(i.price_min * 10000000).toLocaleString()} - ₹{(i.price_max * 10000000).toLocaleString()}</div>
               <div>{i.locality} • {i.project_status}</div>
-              <p style={{fontSize:'0.9rem'}}>Units: {i.total_units} • Available: {i.total_listings}</p>
+              <p style={{ fontSize: '0.9rem' }}>Units: {i.total_units} • Available: {i.total_listings}</p>
             </div>
           ))}
         </div>
@@ -318,7 +307,7 @@ function Favourites({ token }) {
     const newFavs = favs.filter(f => f.listing_id !== id);
     localStorage.setItem('ivy_favourites', JSON.stringify(newFavs));
     setItems(newFavs);
-    if(showToast) showToast('Removed from favourites');
+    if (showToast) showToast('Removed from favourites');
   };
 
   return (
@@ -327,16 +316,16 @@ function Favourites({ token }) {
       <div className="grid">
         {items.map(i => (
           <div className="card flex-col" key={i.listing_id}>
-            <h3 style={{margin:0}}>{i.apartment_name}</h3>
-            <div className="badge" style={{width: 'fit-content'}}>₹{i.price?.toLocaleString()}</div>
+            <h3 style={{ margin: 0 }}>{i.apartment_name}</h3>
+            <div className="badge" style={{ width: 'fit-content' }}>₹{i.price?.toLocaleString()}</div>
             <div>{i.bedroom} BHK • {i.locality}</div>
-            <div className="flex-row" style={{marginTop:'auto'}}>
-              <a className="btn" href={`#/listings/${i.listing_id}`} style={{flex:1, textAlign:'center', textDecoration:'none'}}>View</a>
+            <div className="flex-row" style={{ marginTop: 'auto' }}>
+              <a className="btn" href={`#/listings/${i.listing_id}`} style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>View</a>
               <button className="btn btn-danger" onClick={() => removeFav(i.listing_id)}>Remove</button>
             </div>
           </div>
         ))}
-        {items.length === 0 && <div style={{color:'#cbd5e1'}}>No favourites saved yet.</div>}
+        {items.length === 0 && <div style={{ color: '#cbd5e1' }}>No favourites saved yet.</div>}
       </div>
     </div>
   );
@@ -362,24 +351,24 @@ function Insights() {
   return (
     <div className="flex-col">
       <h2>Insights Dashboard</h2>
-      
-      <h3 style={{marginTop:'1.5rem', marginBottom:'0.5rem', color:'var(--primary)'}}>Data Anomalies Discovered</h3>
+
+      <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>Data Anomalies Discovered</h3>
       <div className="grid">
         {anomalies.map((a, i) => (
-          <div className="card" key={i} style={{borderColor: 'var(--danger)'}}>
-            <h3 style={{margin:0, color:'var(--danger)'}}>{a.title}</h3>
-            <div style={{fontSize:'2rem', fontWeight:'bold', margin:'1rem 0'}}>{a.value}</div>
-            <p style={{fontSize:'0.9rem', color:'#cbd5e1', margin:0}}>{a.desc}</p>
+          <div className="card" key={i} style={{ borderColor: 'var(--danger)' }}>
+            <h3 style={{ margin: 0, color: 'var(--danger)' }}>{a.title}</h3>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0' }}>{a.value}</div>
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>{a.desc}</p>
           </div>
         ))}
       </div>
 
-      <h3 style={{marginTop:'2rem', marginBottom:'0.5rem', color:'var(--primary)'}}>Pre-computed Aggregates</h3>
+      <h3 style={{ marginTop: '2rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>Pre-computed Aggregates</h3>
       <div className="grid">
         {Object.entries(aggregates).map(([k, v], i) => (
           <div className="card" key={i}>
-            <div style={{fontSize:'0.9rem', color:'#94a3b8', textTransform:'capitalize'}}>{k.replace(/_/g, ' ')}</div>
-            <div style={{fontSize:'1.25rem', fontWeight:'600', marginTop:'0.5rem'}}>{v}</div>
+            <div style={{ fontSize: '0.9rem', color: '#94a3b8', textTransform: 'capitalize' }}>{k.replace(/_/g, ' ')}</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: '600', marginTop: '0.5rem' }}>{v}</div>
           </div>
         ))}
       </div>
@@ -399,7 +388,7 @@ function ListingDetail({ token, id }) {
         });
         const data = await res.json();
         setListing(data);
-      } catch(e) {
+      } catch (e) {
         console.error(e);
       }
       setLoading(false);
@@ -413,11 +402,11 @@ function ListingDetail({ token, id }) {
       if (!favs.some(f => f.listing_id === listing.listing_id)) {
         favs.push(listing);
         localStorage.setItem('ivy_favourites', JSON.stringify(favs));
-        if(showToast) showToast('Added to favourites!');
+        if (showToast) showToast('Added to favourites!');
       } else {
-        if(showToast) showToast('Already in favourites!');
+        if (showToast) showToast('Already in favourites!');
       }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -425,10 +414,10 @@ function ListingDetail({ token, id }) {
 
   return (
     <div className="card flex-col">
-      <h2 style={{margin:0}}>{listing.apartment_name}</h2>
-      <div className="badge" style={{width: 'fit-content'}}>₹{listing.price?.toLocaleString()}</div>
+      <h2 style={{ margin: 0 }}>{listing.apartment_name}</h2>
+      <div className="badge" style={{ width: 'fit-content' }}>₹{listing.price?.toLocaleString()}</div>
       <p>{cleanDescription(listing.description)}</p>
-      <div className="grid" style={{gap: '0.5rem', marginBottom: '1rem'}}>
+      <div className="grid" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
         <div><strong>Locality:</strong> {listing.locality}</div>
         <div><strong>BHK:</strong> {listing.bedroom}</div>
         <div><strong>Area:</strong> {listing.carpet_area} sqft</div>
@@ -437,7 +426,7 @@ function ListingDetail({ token, id }) {
       </div>
       <div className="flex-row">
         <button className="btn" onClick={addFav}>Save to Favourites</button>
-        <a className="btn" href="#/listings" style={{textDecoration:'none', background:'transparent', border:'1px solid var(--primary)', color:'var(--primary)'}}>Back to Listings</a>
+        <a className="btn" href="#/listings" style={{ textDecoration: 'none', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}>Back to Listings</a>
       </div>
     </div>
   );
@@ -469,7 +458,5 @@ function App() {
   );
 }
 
-loadEnv().then(() => {
-  const root = ReactDOM.createRoot(document.getElementById('root'));
-  root.render(<App />);
-});
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
