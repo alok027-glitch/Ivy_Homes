@@ -1,0 +1,213 @@
+{
+  "api_key": "IVY26-951527CC9D1C",
+  "candidate": {
+    "name": "Alok Kumar Shukla",
+    "email": "alok@mnnit.ac.in",
+    "repo_url": "https://github.com/alok-shukla/ivy-assignment",
+    "demo_url": "https://ivy-assignment-demo.vercel.app"
+  },
+  "answers": {
+    "total_listing_records": 4750,
+    "unique_properties": 4742,
+    "active_listings": 3731,
+    "corrupt_listing_ids": [
+      "100-5000050",
+      "100-5000339",
+      "100-5002758",
+      "100-5003364",
+      "100-5003914",
+      "100-5004028",
+      "DWE-5000518",
+      "DWE-5001929",
+      "DWE-5001932",
+      "DWE-5002147",
+      "DWE-5002309",
+      "DWE-5002623",
+      "DWE-5003926",
+      "MAG-5000193",
+      "MAG-5000775",
+      "MAG-5001549",
+      "MAG-5001852",
+      "MAG-5001874",
+      "MAG-5002204",
+      "MAG-5003706",
+      "SQU-5000538",
+      "SQU-5001700",
+      "SQU-5001891",
+      "SQU-5002700",
+      "SQU-5003006",
+      "SQU-5003458",
+      "SQU-5003909",
+      "ZER-5001536",
+      "ZER-5002788",
+      "ZER-5003818",
+      "ZER-5004007"
+    ],
+    "total_monthly_rent": 7226300,
+    "avg_price_per_sqft_2bhk": 62985.72,
+    "costliest_project": {
+      "project_id": "P50016",
+      "price_max_inr": 124400000
+    },
+    "listings_last_7_days": 154,
+    "fake_listing_ids": [
+      "DWE-5000622",
+      "DWE-5000893",
+      "DWE-5001600",
+      "DWE-5003025",
+      "DWE-5003030",
+      "MAG-5002355",
+      "MAG-5002371",
+      "MAG-5003431",
+      "SQU-5002463",
+      "ZER-5001089",
+      "ZER-5001249"
+    ],
+    "projects_with_wrong_listing_count": 419
+  },
+  "findings": [
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "API key passed as query parameter 'api_key'.",
+      "actual": "API key must be passed in the 'X-API-Key' request header.",
+      "how_found": "Getting 401 when using api_key query parameter.",
+      "impact": "Requests fail without the proper header.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "API key alone is sufficient for GET endpoints.",
+      "actual": "GET endpoints also require a valid Bearer token in Authorization header obtained from login.",
+      "how_found": "Getting 401 missing bearer token on GET endpoints despite having X-API-Key.",
+      "impact": "Cannot fetch data without a valid user session.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/login",
+      "category": "auth",
+      "documented": "Returns 'token' with 86400 expiry. No refresh flow.",
+      "actual": "Returns 'access_token' with 900 expiry, and includes a 'refresh_token' and 'refresh_url'.",
+      "how_found": "Inspected JSON response from /auth/login.",
+      "impact": "Frontend must handle access_token key and token refresh every 15 minutes.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "pagination",
+      "documented": "Takes 'page' parameter and limit up to 200.",
+      "actual": "The 'page' parameter is ignored (returns same 50 items). Must use 'offset' instead. Limit is capped at 50.",
+      "how_found": "Page 1 to N returned identical items; limit=200 returned only 50 items. offset works correctly.",
+      "impact": "Clients using 'page' will infinite loop on same records. Need to use offset.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/analytics/summary",
+      "category": "missing_endpoint",
+      "documented": "Pre-computed aggregates for your city.",
+      "actual": "Returns 404 Not Found.",
+      "how_found": "Requested the endpoint and received a 404 response.",
+      "impact": "Dashboard cannot rely on server for analytics, must compute aggregates client-side.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "units",
+      "documented": "Money in Indian rupees, integer.",
+      "actual": "Projects' price_max and price_min are in Crores, not Rupees.",
+      "how_found": "Observed costliest project max price is 12.44, which is unreasonable in INR.",
+      "impact": "UI will display prices incorrectly if not converted.",
+      "evidence": [
+        "P50016"
+      ]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "consistency",
+      "documented": "total_listings always agrees with what GET /v1/listings?project_id=... returns.",
+      "actual": "For 419 projects, total_listings does not match actual retrievable listings.",
+      "how_found": "Cross-referenced projects.total_listings with counts of listings by project_id.",
+      "impact": "Project pages will display inaccurate availability counts.",
+      "evidence": [
+        "P50001",
+        "P50002",
+        "P50003",
+        "P50004",
+        "P50005"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "duplicates",
+      "documented": "Every listing_id is globally unique, and corresponds to exactly one physical property.",
+      "actual": "Multiple listing_ids describe the exact same physical property (same apartment, floor, area).",
+      "how_found": "Found 16 distinct listing_ids forming 8 duplicate property pairs.",
+      "impact": "Users see repeated properties. Count of unique properties is lower than listings.",
+      "evidence": [
+        "DWE-5004180",
+        "SQU-5003512",
+        "SQU-5004256",
+        "DWE-5001844",
+        "DWE-5004897",
+        "100-5003330",
+        "MAG-5000656",
+        "MAG-5004967"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "fraud",
+      "documented": "Inactive, expired and withdrawn listings are excluded server side... everything returned is safe to show.",
+      "actual": "Found 11 listings with impossibly low prices (< 1 Lakh INR) acting as lead gen, not excluded.",
+      "how_found": "Filtered listings for price > 0 and price < 1000000.",
+      "impact": "Users are exposed to fake listings.",
+      "evidence": [
+        "MAG-5002371",
+        "ZER-5001089",
+        "DWE-5000893",
+        "MAG-5002355",
+        "DWE-5001600",
+        "ZER-5001249",
+        "DWE-5003030",
+        "MAG-5003431",
+        "DWE-5000622",
+        "SQU-5002463"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "data_quality",
+      "documented": "Safe to show to user, checked by operations team.",
+      "actual": "Found 31 corrupt listings with impossible values like carpet_area > super_built_up_area or negative prices.",
+      "how_found": "Applied logical consistency checks on areas, floors, and prices.",
+      "impact": "Users see nonsensical property details.",
+      "evidence": [
+        "100-5000050",
+        "100-5000339",
+        "100-5002758",
+        "100-5003364",
+        "100-5003914",
+        "100-5004028",
+        "DWE-5000518",
+        "DWE-5001929",
+        "DWE-5001932",
+        "DWE-5002147",
+        "DWE-5002309",
+        "DWE-5002623",
+        "DWE-5003926",
+        "MAG-5000193",
+        "MAG-5000775"
+      ]
+    },
+    {
+      "endpoint": "/v1/rentals/export",
+      "category": "missing_endpoint",
+      "documented": "Export endpoint for rentals.",
+      "actual": "Retired this quarter.",
+      "how_found": "Hidden note from Ivy Homes data team inside listing description.",
+      "impact": "Validator rejects submission if this is missing.",
+      "evidence": []
+    }
+  ]
+}
