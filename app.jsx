@@ -1,12 +1,8 @@
 
 const { useState, useEffect } = React;
 
-// Use import.meta.env as requested. Wrapped in try-catch to prevent syntax errors in standalone Babel environments.
-let metaEnv = {};
-try { metaEnv = import.meta.env || {}; } catch (e) {}
-
-const API_KEY = metaEnv.VITE_API_KEY || metaEnv.API_KEY || "IVY26-951527CC9D1C";
-const BASE_URL = metaEnv.VITE_BASE_URL || metaEnv.BASE_URL || "https://solve.ivy.homes";
+const API_KEY = "IVY26-951527CC9D1C";
+const BASE_URL = "https://solve.ivy.homes";
 const ToastContext = React.createContext();
 
 const cleanDescription = (desc) => {
