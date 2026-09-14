@@ -214,5 +214,77 @@ function Listings({ token }) {
     </div>
   );
 }
+function Rentals({ token }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRentals = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/v1/rentals?offset=0&limit=50`, {
+          headers: { 'X-API-Key': API_KEY, 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setItems(data.results || []);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    fetchRentals();
+  }, [token]);
+
+  return (
+    <div className="flex-col">
+      <h2>Rentals</h2>
+      {loading ? <div>Loading...</div> : (
+        <div className="grid">
+          {items.map(i => (
+            <div className="card flex-col" key={i.listing_id}>
+              <h3 style={{margin:0}}>{i.apartment_name || i.title}</h3>
+              <div className="badge" style={{width: 'fit-content'}}>₹{i.price.toLocaleString()} / mo</div>
+              <div>{i.bedroom} BHK • {i.locality}</div>
+              <p style={{fontSize:'0.9rem', color:'#cbd5e1'}}>{cleanDescription(i.description)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+function Projects({ token }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/v1/projects?offset=0&limit=50`, {
+          headers: { 'X-API-Key': API_KEY, 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setItems(data.results || []);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    fetchProjects();
+  }, [token]);
+
+  return (
+    <div className="flex-col">
+      <h2>Projects</h2>
+      {loading ? <div>Loading...</div> : (
+        <div className="grid">
+          {items.map(i => (
+            <div className="card flex-col" key={i.project_id}>
+              <h3 style={{margin:0}}>{i.apartment_name}</h3>
+              <div className="badge" style={{width: 'fit-content'}}>₹{(i.price_min*10000000).toLocaleString()} - ₹{(i.price_max*10000000).toLocaleString()}</div>
+              <div>{i.locality} • {i.project_status}</div>
+              <p style={{fontSize:'0.9rem'}}>Units: {i.total_units} • Available: {i.total_listings}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<MainApp />);
