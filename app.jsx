@@ -286,5 +286,42 @@ function Projects({ token }) {
     </div>
   );
 }
+function Favourites({ token }) {
+  const [items, setItems] = useState([]);
+  const showToast = React.useContext(ToastContext);
+
+  useEffect(() => {
+    const favs = JSON.parse(localStorage.getItem('ivy_favourites') || '[]');
+    setItems(favs);
+  }, [token]);
+
+  const removeFav = (id) => {
+    const favs = JSON.parse(localStorage.getItem('ivy_favourites') || '[]');
+    const newFavs = favs.filter(f => f.listing_id !== id);
+    localStorage.setItem('ivy_favourites', JSON.stringify(newFavs));
+    setItems(newFavs);
+    if(showToast) showToast('Removed from favourites');
+  };
+
+  return (
+    <div className="flex-col">
+      <h2>My Favourites</h2>
+      <div className="grid">
+        {items.map(i => (
+          <div className="card flex-col" key={i.listing_id}>
+            <h3 style={{margin:0}}>{i.apartment_name}</h3>
+            <div className="badge" style={{width: 'fit-content'}}>₹{i.price?.toLocaleString()}</div>
+            <div>{i.bedroom} BHK • {i.locality}</div>
+            <div className="flex-row" style={{marginTop:'auto'}}>
+              <a className="btn" href={`#/listings/${i.listing_id}`} style={{flex:1, textAlign:'center', textDecoration:'none'}}>View</a>
+              <button className="btn btn-danger" onClick={() => removeFav(i.listing_id)}>Remove</button>
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && <div style={{color:'#cbd5e1'}}>No favourites saved yet.</div>}
+      </div>
+    </div>
+  );
+}
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<MainApp />);
