@@ -425,5 +425,31 @@ function ListingDetail({ token, id }) {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<MainApp />);
+function App() {
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  return (
+    <ToastContext.Provider value={showToast}>
+      <MainApp />
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '20px', right: '20px',
+          background: 'var(--primary)', color: 'white',
+          padding: '1rem 2rem', borderRadius: '8px',
+          boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+          zIndex: 9999, animation: 'fadeIn 0.3s ease-out'
+        }}>
+          {toast}
+        </div>
+      )}
+    </ToastContext.Provider>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
