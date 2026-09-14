@@ -368,5 +368,62 @@ function Insights() {
     </div>
   );
 }
+function ListingDetail({ token, id }) {
+  const [listing, setListing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const showToast = React.useContext(ToastContext);
+
+  useEffect(() => {
+    const fetchListing = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/v1/listings/${id}`, {
+          headers: { 'X-API-Key': API_KEY, 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setListing(data);
+      } catch(e) {
+        console.error(e);
+      }
+      setLoading(false);
+    };
+    fetchListing();
+  }, [id, token]);
+
+  const addFav = () => {
+    try {
+      const favs = JSON.parse(localStorage.getItem('ivy_favourites') || '[]');
+      if (!favs.some(f => f.listing_id === listing.listing_id)) {
+        favs.push(listing);
+        localStorage.setItem('ivy_favourites', JSON.stringify(favs));
+        if(showToast) showToast('Added to favourites!');
+      } else {
+        if(showToast) showToast('Already in favourites!');
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!listing) return <div>Listing not found</div>;
+
+  return (
+    <div className="card flex-col">
+      <h2 style={{margin:0}}>{listing.apartment_name}</h2>
+      <div className="badge" style={{width: 'fit-content'}}>₹{listing.price?.toLocaleString()}</div>
+      <p>{cleanDescription(listing.description)}</p>
+      <div className="grid" style={{gap: '0.5rem', marginBottom: '1rem'}}>
+        <div><strong>Locality:</strong> {listing.locality}</div>
+        <div><strong>BHK:</strong> {listing.bedroom}</div>
+        <div><strong>Area:</strong> {listing.carpet_area} sqft</div>
+        <div><strong>Furnishing:</strong> {listing.furnishing}</div>
+        <div><strong>Contact:</strong> {listing.posted_by_name} ({listing.posted_by_contact})</div>
+      </div>
+      <div className="flex-row">
+        <button className="btn" onClick={addFav}>Save to Favourites</button>
+        <a className="btn" href="#/listings" style={{textDecoration:'none', background:'transparent', border:'1px solid var(--primary)', color:'var(--primary)'}}>Back to Listings</a>
+      </div>
+    </div>
+  );
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<MainApp />);
